@@ -1,9 +1,16 @@
+from http import HTTPStatus
+from flask_jwt_extended import get_jwt, jwt_required
 from marshmallow import ValidationError
+
+from app.AuthServices.models import User
+from app.AuthServices.schemas import UserSchema
+# from app.AuthServices.utils.decorator import user_jwt_required
 from .dto import authentication_ns 
 from .dto import signup_model,login_model
 from flask_restx import Resource
 from flask import request
-from .controllers import register_user,login_user,logout
+from .controllers import fetch_user, register_user,login_user,logout
+from .utils.token import user_jwt_required
 
 
 
@@ -16,22 +23,13 @@ class Signup(Resource):
     @authentication_ns.response(400, "Bad request")
     def post(self):
         """Sign up a new user."""
-        data = request.json
 
-        try:
+        # Call the service function to handle the signup logic
+        user_data = register_user()
 
-            # Call the service function to handle the signup logic
-            user_data = register_user(data)
+        # Serialize the user object to send back the response
+        return user_data
 
-            # Serialize the user object to send back the response
-            return user_data, 201
-
-        except ValidationError as err:
-            return {"message": "Validation failed", "errors": err.messages}, 400
-        except ValueError as err:
-            return {"message": str(err)}, 400
-        except Exception as err:
-            return {"message": "An unexpected error occurred", "error": str(err)}, 500
 
 
 
@@ -42,22 +40,31 @@ class Login(Resource):
     @authentication_ns.response(400, "Bad request")
     def post(self):
         """Sign up a new user."""
-        data = request.json
 
-        try:
 
-            # Call the service function to handle the signup logic
-            user_data = login_user(data)
+        # Call the service function to handle the signup logic
+        user_data = login_user()
 
-            # Serialize the user object to send back the response
-            return user_data, 200
+        # Serialize the user object to send back the response
+        return user_data
 
-        except ValidationError as err:
-            return {"message": "Validation failed", "errors": err.messages}, 400
-        except ValueError as err:
-            return {"message": str(err)}, 400
-        except Exception as err:
-            return {"message": "An unexpected error occurred", "error": str(err)}, 500
+
+# FetchUser
+@authentication_ns.route("/profile/<int:user_id>", methods=["GET"])
+class Profile(Resource):
+    @authentication_ns.response(200, "Profile fetched successfully")
+    @authentication_ns.response(401, "Unauthorized")
+    @authentication_ns.response(404, "User not found")
+    @user_jwt_required(validate_user_id=True)  # Ensure that a valid JWT is required to access this route
+    # @jwt_required(validate_user_id = True)  # Ensure that a valid JWT is required to access this route
+    def get(self, user_id):
+        """Fetch user profile based on JWT token."""
+        result, status_code = fetch_user(user_id)  #
+
+        return result, status_code
+
+    
+
         
 
 @authentication_ns.route("/logout", methods=["POST"])
@@ -66,17 +73,8 @@ class Logout(Resource):
     @authentication_ns.response(400, "Bad request")
     def post(self):
         """Sign up a new user."""
-        try:
+        # Call the service function to handle the signup logic
+        user_data = logout()
 
-            # Call the service function to handle the signup logic
-            user_data = logout()
-
-            # Serialize the user object to send back the response
-            return user_data, 200
-
-        except ValidationError as err:
-            return {"message": "Validation failed", "errors": err.messages}, 400
-        except ValueError as err:
-            return {"message": str(err)}, 400
-        except Exception as err:
-            return {"message": "An unexpected error occurred", "error": str(err)}, 500
+        # Serialize the user object to send back the response
+        return user_data

@@ -1,3 +1,4 @@
+from flask import request
 from flask_jwt_extended import get_jwt
 from marshmallow import ValidationError
 from .models import db, User
@@ -8,7 +9,8 @@ from http import HTTPStatus
 
 BLACKLIST = set()
 
-def register_user(data):
+def register_user():
+    data = request.get_json()
     user_schema = UserSchema()
 
     try:
@@ -41,7 +43,8 @@ def register_user(data):
         return {"error": "An error occurred while registering the user."}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-def login_user(data):
+def login_user():
+    data = request.get_json()
     login_schema = LoginSchema()
     try:
         validated_data = login_schema.load(data)
@@ -67,8 +70,30 @@ def login_user(data):
         print(f"Exception occurred: {str(e)}")
         return {"error": "An unexpected error occurred while logging in."}, HTTPStatus.INTERNAL_SERVER_ERROR
 
+def fetch_user(user_id):
+    try:
+        # Get the current JWT token data (we expect 'sub' to be the user ID)
+        # jwt_data = get_jwt()
+        # user_id = jwt_data["sub"]  # "sub" is the standard claim for user ID in JWTs
 
+        # Fetch the user from the database using the extracted user ID
+        user = User.query.get(user_id)
 
+        # Check if the user exists
+        if not user:
+            return {"error": "User not found."}, HTTPStatus.NOT_FOUND
+
+        # Return user details (you can customize the response to include any fields you need)
+        return {
+            "user_id": user.id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "message": "User data retrieved successfully."
+        }, HTTPStatus.OK
+    except Exception as e:
+        print(f"Exception occurred in fetch_user: {str(e)}")
+        return {"error": "An error occurred while fetching user data."}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 def logout():
