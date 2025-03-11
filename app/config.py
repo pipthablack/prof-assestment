@@ -11,7 +11,9 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = os.getenv("SECRET_KEY")  # Default secret key
-    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")  # Secret key for tokens
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+    JWT_SECRET_USER= os.getenv("JWT_SECRET_USER")
+    # Secret key for tokens
     # SMTP_SERVER = "localhost"
     # SMTP_PORT = 1025
     # SMTP_USE_TLS = False

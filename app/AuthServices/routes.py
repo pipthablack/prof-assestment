@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from flask_jwt_extended import get_jwt, jwt_required
+from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 from marshmallow import ValidationError
 
 from app.AuthServices.models import User
@@ -10,7 +10,7 @@ from .dto import signup_model,login_model
 from flask_restx import Resource
 from flask import request
 from .controllers import fetch_user, register_user,login_user,logout
-from .utils.token import user_jwt_required
+from .utils.decorator import user_jwt_required
 
 
 
@@ -50,16 +50,17 @@ class Login(Resource):
 
 
 # FetchUser
-@authentication_ns.route("/profile/<int:user_id>", methods=["GET"])
+@authentication_ns.route("/profile", methods=["GET"])
 class Profile(Resource):
     @authentication_ns.response(200, "Profile fetched successfully")
     @authentication_ns.response(401, "Unauthorized")
     @authentication_ns.response(404, "User not found")
-    @user_jwt_required(validate_user_id=True)  # Ensure that a valid JWT is required to access this route
+    @user_jwt_required()  # Ensure that a valid JWT is required to access this route
     # @jwt_required(validate_user_id = True)  # Ensure that a valid JWT is required to access this route
-    def get(self, user_id):
+    def get(self):
         """Fetch user profile based on JWT token."""
-        result, status_code = fetch_user(user_id)  #
+        # current_user_id = get_jwt_identity() 
+        result, status_code = fetch_user()  #
 
         return result, status_code
 
@@ -71,8 +72,9 @@ class Profile(Resource):
 class Logout(Resource):
     @authentication_ns.response(200, "User logged out successfully")
     @authentication_ns.response(400, "Bad request")
+    @user_jwt_required()  # Ensure that a valid JWT is required to access this route
     def post(self):
-        """Sign up a new user."""
+        """Log Out an existing user."""
         # Call the service function to handle the signup logic
         user_data = logout()
 

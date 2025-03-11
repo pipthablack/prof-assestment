@@ -20,7 +20,7 @@ def create_app():
     # Initialize the db with the app
     db.init_app(app)
     migrate.init_app(app, db)
-    CORS(app, resources={r"/*": {"origins": ["https://e3dc-102-89-68-34.ngrok-free.app"]}})
+    CORS(app)
 
 
 

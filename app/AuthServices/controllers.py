@@ -1,5 +1,6 @@
-from flask import request
+from flask import request, g
 from flask_jwt_extended import get_jwt
+from asyncio.log import logger
 from marshmallow import ValidationError
 from .models import db, User
 from .schemas import UserSchema, LoginSchema
@@ -70,20 +71,14 @@ def login_user():
         print(f"Exception occurred: {str(e)}")
         return {"error": "An unexpected error occurred while logging in."}, HTTPStatus.INTERNAL_SERVER_ERROR
 
-def fetch_user(user_id):
+def fetch_user():
     try:
-        # Get the current JWT token data (we expect 'sub' to be the user ID)
-        # jwt_data = get_jwt()
-        # user_id = jwt_data["sub"]  # "sub" is the standard claim for user ID in JWTs
+        user_id = g.user_id  
 
         # Fetch the user from the database using the extracted user ID
         user = User.query.get(user_id)
-
-        # Check if the user exists
-        if not user:
-            return {"error": "User not found."}, HTTPStatus.NOT_FOUND
-
-        # Return user details (you can customize the response to include any fields you need)
+        print(f"User ID: {user_id}")
+        print(f"User: {user}")
         return {
             "user_id": user.id,
             "first_name": user.first_name,
@@ -98,10 +93,23 @@ def fetch_user(user_id):
 
 def logout():
     try:
-        jti = get_jwt()["jti"]
-
-        BLACKLIST.add(jti)
+        user_id:int = g.user_id
+        
+        user = User.query.get(user_id)
+        
+        if not user:
+            return {"message": "User not found."}, HTTPStatus.NOT_FOUND  
+                                   
+        db.session.commit()
+        
+        logger.info("User logged out successfully.")
 
         return {"message": "User logged out successfully."}, HTTPStatus.OK
-    except Exception:
-        return {"message": "An error occurred while logging out."}, HTTPStatus.INTERNAL_SERVER_ERROR
+    except ValueError as e:
+        logger.error("Value error: %s", e)
+        return {"message": str(e)}, HTTPStatus.BAD_REQUEST
+    except Exception as e:
+        logger.error("Error occurred while logging out: %s", e)
+        return {
+            "message": "An error occurred while logging out."
+        }, HTTPStatus.INTERNAL_SERVER_ERROR
